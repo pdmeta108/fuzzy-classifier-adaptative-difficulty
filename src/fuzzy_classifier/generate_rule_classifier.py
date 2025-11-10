@@ -31,6 +31,28 @@ def toCacheString(rule, data_row):
         strRow += "%0.3f" % data_row.iloc[x]
     return strRule + strRow
 
+# Generar reglas aleatorias
+def generateRule():
+    randBits = []
+    randRule = randint(0, pow(2, 12)-1)
+    rule = "{0:b}".format(randRule)
+
+    # Modificar aqui para obtener + o - clases (target)
+    randClass = randint(0,3)
+
+    for i in range(12-len(rule)):
+        randBits.append(0)
+    for i in range(len(rule)):
+        randBits.append(int(rule[i]))
+    return randBits
+    '''
+    if (randClass == 0):
+        randBits += [0,0,1]
+    elif(randClass == 1):
+        randBits += [0,1,0]
+    else:
+        randBits += [1,0,0]
+    '''
 
 def generateRules(n_indiv: int, n_vars: int, n_classes: int = 0):
     """
@@ -65,7 +87,7 @@ def checkRules(indiv):
                 print("Esto es muy raro en classifier:revisarreglas")
     return goodRulesNb, badRulesNb
 
-def getCompetitionStrength(rule, n_classes, X, y):
+def getCompetitionStrength(rule, X, y, n_classes=N_CLASSES):
     """
     Devuelve la fuerza de competencia de la regla dada para cada clase
     """
@@ -83,7 +105,7 @@ def getCompetitionStrength(rule, n_classes, X, y):
 
 # Esta funcion devuelve el numero de la clase y el porcentaje verdadero de esa clase
 # basado en la funcion entrenamiento.
-def getConf(rule):
+def getConf(rule, X, y):
     # Transformar [0, 0, 1, 0, 0, 1, 0, 1, 0, 0, 0, 1] en '001001010001'
     hashedRule = "".join(str(i) for i in rule)
     if hashedRule in truthCache:
@@ -93,7 +115,7 @@ def getConf(rule):
             maxIndex, maxValue = (-1, -1)
         else:
             # Revisar a traves de los datos de entrenamiento para obtener PesoCompeticion
-            competitionStrength = getCompetitionStrength(rule)
+            competitionStrength = getCompetitionStrength(rule, X, y)
             # Dividir por la suma para obtener porcentaje verdadero (entre 0 y 1)
             strSum = sum(competitionStrength)
             if strSum != 0:
