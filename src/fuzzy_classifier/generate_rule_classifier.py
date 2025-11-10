@@ -1,4 +1,3 @@
-import train_data
 import numpy as np
 from random import randint
 # from inferfuzzy.systems import LarsenSystem, MamdaniSystem
@@ -7,6 +6,7 @@ from inferfuzzy.memberships import (
 )
 from inferfuzzy import var
 from sklearn.metrics import accuracy_score
+from fuzzy_classifier import train_data
 
 # variables
 N_INDIV = 3
@@ -196,17 +196,3 @@ def calcComplexity(indiv, dontCare=True):
         else:
             complexity += sum(rule)
     return complexity
-
-# print("variable triangulo", triangle_set)
-
-# Entrenamiento de datos
-X_train, X_test, y_train, y_test = train_data.getTrainedLanderData()
-
-
-rule_class = generateRules(N_INDIV, N_VARS)
-print(rule_class, type(rule_class))
-print(X_test.loc[0], type(X_test.loc[0]))
-# print(triangle_set.sets["medio"].membership(300))
-# array_mt = getMutationArray(rule_class, X_test.loc[0], triangle_set)
-array_mt = getCompetitionStrength(rule_class, N_CLASSES, X_train, y_train)
-print("competition strength", array_mt)
