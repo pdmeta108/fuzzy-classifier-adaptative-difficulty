@@ -1,2 +1,4 @@
 src/fuzzy_classifier/__pycache__/*
 src/lunar_lander_score/__pycache__/*
+.env/
+.env/*
