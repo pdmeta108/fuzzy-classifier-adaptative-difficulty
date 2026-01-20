@@ -24,7 +24,6 @@ inferenceCache = {}
 
 
 def toCacheString(rule, data_row):
-    print("cache rule", rule)
     strRule = "".join(str(i) for i in rule)
     strRow = ""
     for x in range(len(data_row)):
@@ -58,9 +57,7 @@ def generateRules(n_indiv: int, n_vars: int, n_classes: int = 0):
     """
     genera una regla difusa aleatoria
     """
-    print("Generando reglas...", n_vars, n_indiv, n_classes)
     randRule = randint(0, pow(2, n_vars * n_indiv) - 1)
-    print("Random rule:", randRule)
     rule = "{0:b}".format(randRule)
 
     # Modificar aqui para obtener + o - clases (target)
@@ -72,9 +69,9 @@ def generateRules(n_indiv: int, n_vars: int, n_classes: int = 0):
 
     return randBits
 
-def checkRules(indiv):
+def checkRules(indiv, X_data, y_data):
     # Obtener el puntaje de reglas buenas (joker regla) y reglas malas (sin clases)
-    confVect = getConfVect(indiv.rules)
+    confVect = getConfVect(indiv.rules, X_data, y_data)
     goodRulesNb = 0
     badRulesNb = 0
     for classNb, conf in confVect:
@@ -160,14 +157,12 @@ def getMuA(rule, data_row, fuzzy_set=triangle_set):
         if maxArray == []:
             muA = 0  #  * No estoy seguro de eso : significa que es la joker regla
         else:
-            print("max array", maxArray)
             muA = min(maxArray)
-            print("muA", muA)
         inferenceCache[cacheString] = muA
         return muA
 
 
-def getPredictedConfVect(confVect, muAVect, n_classes):
+def getPredictedConfVect(confVect, muAVect, n_classes=N_CLASSES):
     # Modificar aqui para obtener + o - clases (target)
     predictedConfVect = np.zeros(n_classes, int)
     cnt = np.ones(n_classes, int)
@@ -186,24 +181,24 @@ def getMuAVect(rules, data_row):
     return [getMuA(rule, data_row) for rule in rules]
 
 # Obtener la mejor clase y su porcentaje de confianza de cada regla
-def getConfVect(rules):
-    return [getConf(rule) for rule in rules]
+def getConfVect(rules, X, y):
+    return [getConf(rule, X, y) for rule in rules]
 
-def getPredictedClass(rules, data_row):
-    predictedConfVect = getPredictedConfVect(getConfVect(rules), getMuAVect(rules, data_row))
+def getPredictedClass(rules, X_data, y_data, data_row):
+    predictedConfVect = getPredictedConfVect(getConfVect(rules, X_data, y_data), getMuAVect(rules, data_row))
     predictedClass, predictedConf = max(enumerate(predictedConfVect), key=lambda x: x[1])
     return predictedClass, predictedConf
 
-def getPredictedClasses(indiv, data):
+def getPredictedClasses(indiv, X_data, y_data):
     predictedClassArray = []
-    for _, data_row in data.iterrows():
-        predictedClass, predictedConf = getPredictedClass(indiv.rules, data_row)
+    for _, data_row in X_data.iterrows():
+        predictedClass, predictedConf = getPredictedClass(indiv.rules, X_data, y_data, data_row)
         predictedClassArray.append(predictedClass)
     return predictedClassArray
 
 
 def getAccuracy(indiv, X, y):
-    predictedClassArray = getPredictedClasses(indiv, X)
+    predictedClassArray = getPredictedClasses(indiv, X, y)
     score = accuracy_score(y, predictedClassArray)
     return score
 

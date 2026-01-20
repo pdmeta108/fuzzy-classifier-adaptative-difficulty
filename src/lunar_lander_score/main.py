@@ -7,7 +7,10 @@ sys.path.append('../')
 
 from fuzzy_classifier.train_data import getTrainedLanderData
 from fuzzy_classifier import generate_rule_classifier
-
+from inferfuzzy import var
+from inferfuzzy.memberships import (
+    LMembership,
+)
 #### Numero de reglas base ####
 nbRules = 8
 
@@ -36,16 +39,9 @@ class Indiv:
             for i in range(nbRules):
                 self.rules.append(generate_rule_classifier.generateRule())
 
-    def __str__(self, data_X=None, data_y=None):
-        s = ""
-        for i in range(nbRules):
-            s += "Regla " + str(i) + ": " + str(self.rules[i]) + "\t"
-            s += str(generate_rule_classifier.getConf(self.rules[i]), data_X, data_y) + "\n"
-        return s
-
     def getFitness(self, data_X, data_y):
         acc = generate_rule_classifier.getAccuracy(self, data_X, data_y)
-        goodRulesNb, badRulesNb = generate_rule_classifier.checkRules(self)
+        goodRulesNb, badRulesNb = generate_rule_classifier.checkRules(self, data_X, data_y)
         complexity = generate_rule_classifier.calcComplexity(self)
 
         w1 = 0.6
@@ -207,6 +203,11 @@ def getSubClassValue(parametro_box, subclase):
         return 0
 
 if __name__ == "__main__":
+    # conjunto difuso triangular
+    triangle_set = var.Var("triangle set")
+    triangle_set += "bajo", LMembership(-0.5, 0.5)
+    triangle_set += "medio", LMembership(0, 1)
+    triangle_set += "alto", LMembership(0.5, 1.5)
     # print("variable triangulo", triangle_set)
 
     # Entrenamiento de datos
@@ -221,12 +222,12 @@ if __name__ == "__main__":
     for i in range(GENERATION_NUMBER):
 
         newpop = Population(False)
-        print("Generacion numero : {}".format(str(i)))
+        print("Generacion numero : {}".format(str(i + 1)))
 
         for j in range(popSize):
             # Proceso de torneo
-            parent1 = tournament(pop, X_test, y_test)
-            parent2 = tournament(pop, X_test, y_test)
+            parent1 = tournament(pop, X_train, y_train)
+            parent2 = tournament(pop, X_train, y_train)
 
             child = crossOver(parent1, parent2)
             newpop.listpop.append(child)
@@ -236,20 +237,25 @@ if __name__ == "__main__":
             mutation(newpop.listpop[j])
 
         pop = newpop
+        s = ""
         # Mostrar el mejor set de reglas en la poblacion
-        thisFittest = pop.getFittest(X_test, y_test)
-        print("Mejor precision ajustada : {}".format(str(generate_rule_classifier.getAccuracy(thisFittest, X_test, y_test))))
-        print(thisFittest)
-        fit_rules.append(generate_rule_classifier.getAccuracy(thisFittest, X_test, y_test))
+        thisFittest = pop.getFittest(X_train, y_train)
+        print("Mejor precision ajustada : {}".format(str(generate_rule_classifier.getAccuracy(thisFittest, X_train, y_train))))
+        # Guardar cada set de reglas para imprimir
+        for i in range(nbRules):
+            s += "Regla " + str(i) + ": " + str(thisFittest.rules[i]) + "\t"
+            s += str(generate_rule_classifier.getConf(thisFittest.rules[i], X_train, y_train)) + "\n"
+        print(s)
+        fit_rules.append(generate_rule_classifier.getAccuracy(thisFittest, X_train, y_train))
 
     # Mostrar la complejidad del set de reglas
     print("Calculo de complejidad final: {}".format(generate_rule_classifier.calcComplexity(thisFittest)))
     # Obtener set de reglas con salida y guardar en Main()
     reglas, salidas = getRulesfromFittest(thisFittest, X_test, y_test)
-    # rule_class = generateRules(N_INDIV, N_VARS)
+    # rule_class = generate_rule_classifier.generateRules(N_INDIV, N_VARS)
     # print(rule_class, type(rule_class))
     # print(X_test.loc[0], type(X_test.loc[0]))
     # print(triangle_set.sets["medio"].membership(300))
-    # array_mt = getMutationArray(rule_class, X_test.loc[0], triangle_set)
-    # array_mt = getCompetitionStrength(rule_class, N_CLASSES, X_train, y_train)
+    # array_mt = generate_rule_classifier.getMutationArray(rule_class, X_test.loc[0], triangle_set)
+    # array_mt = generate_rule_classifier.getCompetitionStrength(rule_class, X_train, y_train, N_CLASSES)
     # print("competition strength", array_mt)
