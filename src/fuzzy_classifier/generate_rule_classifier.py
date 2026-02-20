@@ -24,14 +24,31 @@ inferenceCache = {}
 
 
 def toCacheString(rule, data_row):
+    """Guardar string de cache para reglas difusas duplicadas
+
+    Parameters
+    ----------
+    rule : numpy.arr
+        Regla difusa
+    data_row : pandas.Series
+        Fila de datos de acciones de la regla difusa
+
+    Returns
+    -------
+    string
+        cadena de reglas difusas usadas
+    """
+
     strRule = "".join(str(i) for i in rule)
     strRow = ""
     for x in range(len(data_row)):
         strRow += "%0.3f" % data_row.iloc[x]
     return strRule + strRow
 
-# Generar reglas aleatorias
 def generateRule():
+    """
+        Generar reglas aleatorias
+    """
     randBits = []
     randRule = randint(0, pow(2, 12)-1)
     rule = "{0:b}".format(randRule)
@@ -54,8 +71,21 @@ def generateRule():
     '''
 
 def generateRules(n_indiv: int, n_vars: int, n_classes: int = 0):
-    """
-    genera una regla difusa aleatoria
+    """genera una regla difusa aleatoria
+
+    Parameters
+    ----------
+    n_indiv : int
+        Número de individuos
+    n_vars : int
+        Número de variables
+    n_classes : int, optional
+        Número de clases, por defecto 0
+
+    Returns
+    -------
+        randBits : list
+            Lista de reglas
     """
     randRule = randint(0, pow(2, n_vars * n_indiv) - 1)
     rule = "{0:b}".format(randRule)
@@ -70,7 +100,24 @@ def generateRules(n_indiv: int, n_vars: int, n_classes: int = 0):
     return randBits
 
 def checkRules(indiv, X_data, y_data):
-    # Obtener el puntaje de reglas buenas (joker regla) y reglas malas (sin clases)
+    """Obtener el puntaje de reglas buenas (joker regla) y reglas malas (sin clases)
+
+    Parameters
+    ----------
+    indiv : array
+        Individuo
+    X_data : pandas.Series
+        Datos de acciones (entrada)
+    y_data : pandas.Series
+        Datos de clasificación (salida)
+
+    Returns
+    -------
+    goodRulesNb : int
+        Número de reglas buenas
+    badRulesNb : int
+        Número de reglas malas
+    """
     confVect = getConfVect(indiv.rules, X_data, y_data)
     goodRulesNb = 0
     badRulesNb = 0
@@ -85,8 +132,23 @@ def checkRules(indiv, X_data, y_data):
     return goodRulesNb, badRulesNb
 
 def getCompetitionStrength(rule, X, y, n_classes=N_CLASSES):
-    """
-    Devuelve la fuerza de competencia de la regla dada para cada clase
+    """Devuelve la fuerza de competencia de la regla dada para cada clases
+
+    Parameters
+    ----------
+    rule : list
+        Regla difusa
+    X : pandas.Series
+        Datos de acciones (entrada)
+    y : pandas.Series
+        Datos de clasificación (salida)
+    n_classes : int, optional
+        Numero de clases, por defecto N_CLASSES
+
+    Returns
+    -------
+    competitionStrength : list
+        Lista de valores de competicion para cada clasificación
     """
     # Modificar aqui para obtener + o - clases (target)
     competitionStrength = np.zeros(n_classes, int)
@@ -100,9 +162,26 @@ def getCompetitionStrength(rule, X, y, n_classes=N_CLASSES):
 
     return competitionStrength
 
-# Esta funcion devuelve el numero de la clase y el porcentaje verdadero de esa clase
-# basado en la funcion entrenamiento.
 def getConf(rule, X, y):
+    """Esta funcion devuelve el numero de la clase y el porcentaje verdadero de esa clase
+       basado en la funcion entrenamiento.
+
+    Parameters
+    ----------
+    rule : list
+        Regla difusa
+    X : pandas.Series
+        Datos de acciones (entrada)
+    y : pandas.Series
+        Datos de clasificación (salida)
+
+    Returns
+    -------
+    maxIndex : int
+        Número correspondiente a la clase o salida de valor de la regla difusa
+    maxValue : int
+        Valor porcentual de clasificación verdadera
+    """
     # Transformar [0, 0, 1, 0, 0, 1, 0, 1, 0, 0, 0, 1] en '001001010001'
     hashedRule = "".join(str(i) for i in rule)
     if hashedRule in truthCache:
@@ -125,8 +204,21 @@ def getConf(rule, X, y):
         return (maxIndex, maxValue)
 
 def getMuA(rule, data_row, fuzzy_set=triangle_set):
-    """
-    Devuelve el array de mutación para la regla dada y la fila de datos
+    """Devuelve el array de mutación para la regla dada y la fila de datos
+
+    Parameters
+    ----------
+    rule : list
+        Regla difusa
+    data_row : pandas.Series
+        Conjunto de datos de acciones
+    fuzzy_set : fuzzy_classifier.generate_rule_classifier.triangle_set, optional
+        Conjunto de reglas difusas, por defecto triangle_set
+
+    Returns
+    -------
+    muA : list
+        Array de de regla difusa con mutación
     """
     # Revisar si la regla tiene una copia en el cache
     cacheString = toCacheString(rule, data_row)
