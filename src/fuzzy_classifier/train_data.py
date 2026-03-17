@@ -10,9 +10,25 @@ lunar_game_data = pd.read_csv(
 
 
 def getTrainedLanderData(data=lunar_game_data):
-    """
-    Carga los datos del juego LunarLander y devuelve un DataFrame con los datos de entrenamiento.
-    Los datos se normalizan y se dividen en conjuntos de entrenamiento y prueba (80% entrenamiento, 20% prueba).
+    """Carga los datos del juego LunarLander y devuelve un DataFrame con los datos de entrenamiento.
+       Los datos se normalizan y se dividen en conjuntos de entrenamiento y prueba
+       (80% entrenamiento, 20% prueba).
+
+    Parameters
+    ----------
+    data : dataframe, optional
+        datos completos de observacion y de acciones del juego
+
+    Returns
+    -------
+    X_train
+        Datos de entrenamiento (observación)
+    X_test
+        Datos de prueba (observación)
+    y_train
+        Datos de entrenamiento (acción)
+    y_test
+        Datos de prueba (acción)
     """
     # Obtener subconjunto X & subconjunto y
 
@@ -50,8 +66,21 @@ def getTrainedLanderData(data=lunar_game_data):
 
 
 def getClassArray(classNumber, X_train, y_train):
-    """
-    Devuelve array conteniendo todas las instancias de la clasenumero del X_train
+    """Devuelve array conteniendo todas las instancias de la clasenumero del X_train
+
+    Parameters
+    ----------
+    classNumber : int
+        Numero de clasificación de la regla
+    X_train : dataframe
+        Datos de acciones (entrada)
+    y_train : dataframe
+        Datos de clasificación (salida)
+
+    Returns
+    -------
+    array
+        Array de valores del numero de clasificación
     """
     listOfInstancesIndex = y_train.index[y_train["Action"] == classNumber].tolist()
     # print(listOfInstancesIndex)
