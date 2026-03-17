@@ -1,5 +1,6 @@
 import numpy as np
 from random import randint
+
 # from inferfuzzy.systems import LarsenSystem, MamdaniSystem
 from inferfuzzy.memberships import (
     LMembership,
@@ -45,30 +46,32 @@ def toCacheString(rule, data_row):
         strRow += "%0.3f" % data_row.iloc[x]
     return strRule + strRow
 
+
 def generateRule():
     """
-        Generar reglas aleatorias
+    Generar reglas aleatorias
     """
     randBits = []
-    randRule = randint(0, pow(2, 12)-1)
+    randRule = randint(0, pow(2, 12) - 1)
     rule = "{0:b}".format(randRule)
 
     # Modificar aqui para obtener + o - clases (target)
-    randClass = randint(0,3)
+    randClass = randint(0, 3)
 
-    for i in range(12-len(rule)):
+    for i in range(12 - len(rule)):
         randBits.append(0)
     for i in range(len(rule)):
         randBits.append(int(rule[i]))
     return randBits
-    '''
+    """
     if (randClass == 0):
         randBits += [0,0,1]
     elif(randClass == 1):
         randBits += [0,1,0]
     else:
         randBits += [1,0,0]
-    '''
+    """
+
 
 def generateRules(n_indiv: int, n_vars: int, n_classes: int = 0):
     """genera una regla difusa aleatoria
@@ -98,6 +101,7 @@ def generateRules(n_indiv: int, n_vars: int, n_classes: int = 0):
         randBits[i] = int(rule[i])
 
     return randBits
+
 
 def checkRules(indiv, X_data, y_data):
     """Obtener el puntaje de reglas buenas (joker regla) y reglas malas (sin clases)
@@ -131,6 +135,7 @@ def checkRules(indiv, X_data, y_data):
                 print("Esto es muy raro en classifier:revisarreglas")
     return goodRulesNb, badRulesNb
 
+
 def getCompetitionStrength(rule, X, y, n_classes=N_CLASSES):
     """Devuelve la fuerza de competencia de la regla dada para cada clases
 
@@ -161,6 +166,7 @@ def getCompetitionStrength(rule, X, y, n_classes=N_CLASSES):
         )
 
     return competitionStrength
+
 
 def getConf(rule, X, y):
     """Esta funcion devuelve el numero de la clase y el porcentaje verdadero de esa clase
@@ -195,13 +201,14 @@ def getConf(rule, X, y):
             # Dividir por la suma para obtener porcentaje verdadero (entre 0 y 1)
             strSum = sum(competitionStrength)
             if strSum != 0:
-                truthDegree = [i/strSum for i in competitionStrength]
+                truthDegree = [i / strSum for i in competitionStrength]
                 # Obtener la clase con el mejor valor, y su indice
-                maxIndex, maxValue = max(enumerate(truthDegree),key=lambda x: x[1])
+                maxIndex, maxValue = max(enumerate(truthDegree), key=lambda x: x[1])
             else:
                 maxIndex, maxValue = (-1, 0)  # Ninguna clase fue reconocida
         truthCache[hashedRule] = (maxIndex, maxValue)
         return (maxIndex, maxValue)
+
 
 def getMuA(rule, data_row, fuzzy_set=triangle_set):
     """Devuelve el array de mutación para la regla dada y la fila de datos
@@ -269,22 +276,32 @@ def getPredictedConfVect(confVect, muAVect, n_classes=N_CLASSES):
     averagedPredictedConfVect = [predictedConfVect[i] / cnt[i] for i in range(3)]
     return averagedPredictedConfVect
 
+
 def getMuAVect(rules, data_row):
     return [getMuA(rule, data_row) for rule in rules]
+
 
 # Obtener la mejor clase y su porcentaje de confianza de cada regla
 def getConfVect(rules, X, y):
     return [getConf(rule, X, y) for rule in rules]
 
+
 def getPredictedClass(rules, X_data, y_data, data_row):
-    predictedConfVect = getPredictedConfVect(getConfVect(rules, X_data, y_data), getMuAVect(rules, data_row))
-    predictedClass, predictedConf = max(enumerate(predictedConfVect), key=lambda x: x[1])
+    predictedConfVect = getPredictedConfVect(
+        getConfVect(rules, X_data, y_data), getMuAVect(rules, data_row)
+    )
+    predictedClass, predictedConf = max(
+        enumerate(predictedConfVect), key=lambda x: x[1]
+    )
     return predictedClass, predictedConf
+
 
 def getPredictedClasses(indiv, X_data, y_data):
     predictedClassArray = []
     for _, data_row in X_data.iterrows():
-        predictedClass, predictedConf = getPredictedClass(indiv.rules, X_data, y_data, data_row)
+        predictedClass, predictedConf = getPredictedClass(
+            indiv.rules, X_data, y_data, data_row
+        )
         predictedClassArray.append(predictedClass)
     return predictedClassArray
 
@@ -294,12 +311,13 @@ def getAccuracy(indiv, X, y):
     score = accuracy_score(y, predictedClassArray)
     return score
 
+
 def calcComplexity(indiv, dontCare=True):
     complexity = 0
     for rule in indiv.rules:
         if dontCare:
             for i in range(0, 3):
-                if not (rule[i] == rule[i+1] == rule[i+2] == 0):
+                if not (rule[i] == rule[i + 1] == rule[i + 2] == 0):
                     complexity += 1
                     i += 3
         else:

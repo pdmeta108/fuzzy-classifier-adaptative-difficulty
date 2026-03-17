@@ -3,7 +3,7 @@ import numpy as np
 from random import randint, random, uniform
 
 # setting path
-sys.path.append('../')
+sys.path.append("../")
 
 from fuzzy_classifier.train_data import getTrainedLanderData
 from fuzzy_classifier import generate_rule_classifier
@@ -11,6 +11,7 @@ from inferfuzzy import var
 from inferfuzzy.memberships import (
     LMembership,
 )
+
 #### Numero de reglas base ####
 nbRules = 8
 
@@ -20,7 +21,7 @@ N_VARS = 4
 N_CLASSES = 4
 
 #### VARIABLES GA ####
-mutProb = .1
+mutProb = 0.1
 tournamentSize = 3
 elitism = True
 popSize = 15
@@ -32,6 +33,7 @@ GENERATION_NUMBER = 20
 
 # Crear clases Individuo y Poblacion
 
+
 class Indiv:
     def __init__(self, init=True):
         self.rules = []
@@ -41,7 +43,9 @@ class Indiv:
 
     def getFitness(self, data_X, data_y):
         acc = generate_rule_classifier.getAccuracy(self, data_X, data_y)
-        goodRulesNb, badRulesNb = generate_rule_classifier.checkRules(self, data_X, data_y)
+        goodRulesNb, badRulesNb = generate_rule_classifier.checkRules(
+            self, data_X, data_y
+        )
         complexity = generate_rule_classifier.calcComplexity(self)
 
         w1 = 0.6
@@ -61,7 +65,7 @@ class Indiv:
 
 
 class Population:
-    """ x = Indiv()
+    """x = Indiv()
     x.getfit()"""
 
     def __init__(self, init, size=popSize):
@@ -80,6 +84,7 @@ class Population:
                 nb_max = nextFitness
                 index = i
         return self.listpop[index]
+
 
 # FUNCIONES PARA PROCESO DE ALGORITMO GENETICO
 def tournament(pop, data_X, data_y):
@@ -123,9 +128,7 @@ def crossoverRules(rule1, rule2):
 
 def mutation(indiv):
     for i in range(nbRules):
-
         for j in range(nbRules):
-
             prob = random()
 
             if prob < mutProb:
@@ -138,7 +141,9 @@ def getRulesfromFittest(thisFittest, data_X, data_y):
     salidas = []
     for i in range(len(thisFittest.rules)):
         reglas.append(thisFittest.rules[i])
-        salidas.append(generate_rule_classifier.getConf(thisFittest.rules[i], data_X, data_y))
+        salidas.append(
+            generate_rule_classifier.getConf(thisFittest.rules[i], data_X, data_y)
+        )
     return reglas, salidas
 
 
@@ -159,7 +164,7 @@ def getRulesSubClass(rule, i, ruleclass, subclass):
 
 
 # Transformar reglas binarias en reglas literales
-def binRulestoClassRules (rules, outputs, entrada, salida, subclase):
+def binRulestoClassRules(rules, outputs, entrada, salida, subclase):
     soltext = []
     count = 0
     for rule in rules:
@@ -174,7 +179,7 @@ def binRulestoClassRules (rules, outputs, entrada, salida, subclase):
                 rule_text += getRulesSubClass(rule, i, entrada[2], subclase[2])
             elif 8 <= i < 11:
                 rule_text += getRulesSubClass(rule, i, entrada[3], subclase[3])
-        rule_text_2 = rule_text.rstrip('and ')
+        rule_text_2 = rule_text.rstrip("and ")
         # Output process
         tupla = outputs[count]
         if tupla[0] == 0:
@@ -202,6 +207,7 @@ def getSubClassValue(parametro_box, subclase):
     else:
         return 0
 
+
 if __name__ == "__main__":
     # conjunto difuso triangular
     triangle_set = var.Var("triangle set")
@@ -220,7 +226,6 @@ if __name__ == "__main__":
     fit_rules = []
 
     for i in range(GENERATION_NUMBER):
-
         newpop = Population(False)
         print("Generacion numero : {}".format(str(i + 1)))
 
@@ -240,16 +245,33 @@ if __name__ == "__main__":
         s = ""
         # Mostrar el mejor set de reglas en la poblacion
         thisFittest = pop.getFittest(X_train, y_train)
-        print("Mejor precision ajustada : {}".format(str(generate_rule_classifier.getAccuracy(thisFittest, X_train, y_train))))
+        print(
+            "Mejor precision ajustada : {}".format(
+                str(generate_rule_classifier.getAccuracy(thisFittest, X_train, y_train))
+            )
+        )
         # Guardar cada set de reglas para imprimir
         for i in range(nbRules):
             s += "Regla " + str(i) + ": " + str(thisFittest.rules[i]) + "\t"
-            s += str(generate_rule_classifier.getConf(thisFittest.rules[i], X_train, y_train)) + "\n"
+            s += (
+                str(
+                    generate_rule_classifier.getConf(
+                        thisFittest.rules[i], X_train, y_train
+                    )
+                )
+                + "\n"
+            )
         print(s)
-        fit_rules.append(generate_rule_classifier.getAccuracy(thisFittest, X_train, y_train))
+        fit_rules.append(
+            generate_rule_classifier.getAccuracy(thisFittest, X_train, y_train)
+        )
 
     # Mostrar la complejidad del set de reglas
-    print("Calculo de complejidad final: {}".format(generate_rule_classifier.calcComplexity(thisFittest)))
+    print(
+        "Calculo de complejidad final: {}".format(
+            generate_rule_classifier.calcComplexity(thisFittest)
+        )
+    )
     # Obtener set de reglas con salida y guardar en Main()
     reglas, salidas = getRulesfromFittest(thisFittest, X_test, y_test)
     # rule_class = generate_rule_classifier.generateRules(N_INDIV, N_VARS)

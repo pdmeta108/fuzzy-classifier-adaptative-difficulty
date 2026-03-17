@@ -1,10 +1,10 @@
-﻿import data
+import data
 from random import randint
 import numpy as np
 from sklearn.metrics import accuracy_score
 
 #### VARIABLES GA ####
-mutProb = .1
+mutProb = 0.1
 tournamentSize = 4
 elitism = True
 ######################
@@ -26,11 +26,11 @@ class Triangle:
         self.max = max
         self.alpha_cut = alpha_cut
 
-    def valAt(self,x):
-        alpha = 2/(self.max-self.min)
+    def valAt(self, x):
+        alpha = 2 / (self.max - self.min)
         f = lambda x: alpha * (x - self.min)
         g = lambda x: alpha * (-x + self.max)
-        mid = (self.min + self.max)/2
+        mid = (self.min + self.max) / 2
         if x < self.min or x > self.max:
             return 0.0
         elif x < mid:
@@ -70,6 +70,7 @@ class Trapezoid:
         val = self.valAt(x)
         return val if val >= alpha_cut else 0
 
+
 # Por el momento todos los parametros comparten las mismas funciones miembro
 
 
@@ -90,32 +91,32 @@ class Indiv:
     def __str__(self):
         s = ""
         for i in range(nbRules):
-            s += "Rule "+str(i)+": " + self.rules[i] + "\n"
+            s += "Rule " + str(i) + ": " + self.rules[i] + "\n"
         return s
 
 
 # Generar reglas aleatorias
 def generateRule():
     randBits = []
-    randRule = randint(0, pow(2, 12)-1)
+    randRule = randint(0, pow(2, 12) - 1)
     rule = "{0:b}".format(randRule)
 
     # Modificar aqui para obtener + o - clases (target)
-    randClass = randint(0,3)
+    randClass = randint(0, 3)
 
-    for i in range(12-len(rule)):
+    for i in range(12 - len(rule)):
         randBits.append(0)
     for i in range(len(rule)):
         randBits.append(int(rule[i]))
     return randBits
-    '''
+    """
     if (randClass == 0):
         randBits += [0,0,1]
     elif(randClass == 1):
         randBits += [0,1,0]
     else:
         randBits += [1,0,0]
-    '''
+    """
 
 
 def getCompetitionStrength(rule):
@@ -123,9 +124,11 @@ def getCompetitionStrength(rule):
     competitionStrength = [0, 0, 0, 0]
 
     # Modificar aqui para obtener + o - clases (target)
-    for classNumber in range(0,4):
+    for classNumber in range(0, 4):
         classArray = data.getClassArray(classNumber)
-        competitionStrength[classNumber] = sum([getMuA(rule, row) for _, row in classArray.iterrows()])
+        competitionStrength[classNumber] = sum(
+            [getMuA(rule, row) for _, row in classArray.iterrows()]
+        )
 
     return competitionStrength
 
@@ -145,9 +148,9 @@ def getConf(rule):
             # Dividir por la suma para obtener porcentaje verdadero (entre 0 y 1)
             strSum = sum(competitionStrength)
             if strSum != 0:
-                truthDegree = [i/strSum for i in competitionStrength]
+                truthDegree = [i / strSum for i in competitionStrength]
                 # Obtener la clase con el mejor valor, y su indice
-                maxIndex, maxValue = max(enumerate(truthDegree),key=lambda x: x[1])
+                maxIndex, maxValue = max(enumerate(truthDegree), key=lambda x: x[1])
             else:
                 maxIndex, maxValue = (-1, 0)  # Ninguna clase fue reconocida
         truthCache[hashedRule] = (maxIndex, maxValue)
@@ -159,16 +162,16 @@ def getConfVect(rules):
     return [getConf(rule) for rule in rules]
 
 
-def toCacheString(rule,data_row):
+def toCacheString(rule, data_row):
     strRule = "".join(str(i) for i in rule)
     strRow = ""
     for x in range(len(data_row)):
         strRow += "%0.3f" % data_row[x]
-    return strRule+strRow
+    return strRule + strRow
 
 
-def getMuA(rule,data_row):
-    cacheString = toCacheString(rule,data_row)
+def getMuA(rule, data_row):
+    cacheString = toCacheString(rule, data_row)
     if cacheString in inferenceCache:
         return inferenceCache[cacheString]
     else:
@@ -176,15 +179,15 @@ def getMuA(rule,data_row):
         ruleCounter = 0
         for x in range(0, len(data_row)):
             datum = data_row[x]
-            if rule[ruleCounter:ruleCounter+3] != [0, 0, 0]:
+            if rule[ruleCounter : ruleCounter + 3] != [0, 0, 0]:
                 small = 0
                 medium = 0
                 large = 0
                 if rule[ruleCounter] == 1:
                     small = smallTriangle.at(datum)
-                if rule[ruleCounter+1] == 1:
+                if rule[ruleCounter + 1] == 1:
                     medium = medTriangle.at(datum)
-                if rule[ruleCounter+2] == 1:
+                if rule[ruleCounter + 2] == 1:
                     large = largeTriangle.at(datum)
                 maxArray.append(max(small, medium, large))
             ruleCounter += 3
@@ -212,12 +215,17 @@ def getPredictedConfVect(confVect, muAVect):
             cnt[ruleClass] += 1
 
     # Modificar aqui para obtener + o - clases (target)
-    averagedPredictedConfVect = [predictedConfVect[i]/cnt[i] for i in range(3)]
+    averagedPredictedConfVect = [predictedConfVect[i] / cnt[i] for i in range(3)]
     return averagedPredictedConfVect
 
+
 def getPredictedClass(rules, data_row):
-    predictedConfVect = getPredictedConfVect(getConfVect(rules), getMuAVect(rules, data_row))
-    predictedClass, predictedConf = max(enumerate(predictedConfVect), key=lambda x: x[1])
+    predictedConfVect = getPredictedConfVect(
+        getConfVect(rules), getMuAVect(rules, data_row)
+    )
+    predictedClass, predictedConf = max(
+        enumerate(predictedConfVect), key=lambda x: x[1]
+    )
     return predictedClass, predictedConf
 
 
@@ -233,6 +241,7 @@ def getAccuracy(indiv):
     predictedClassArray = getPredictedClasses(indiv, data.X_test)
     score = accuracy_score(data.y_test, predictedClassArray)
     return score
+
 
 def checkRules(indiv):
     # Obtener el puntaje de reglas buenas (joker regla) y reglas malas (sin clases)
@@ -255,23 +264,24 @@ def calcComplexity(indiv, dontCare=True):
     for rule in indiv.rules:
         if dontCare:
             for i in range(0, 3):
-                if not (rule[i] == rule[i+1] == rule[i+2] == 0):
+                if not (rule[i] == rule[i + 1] == rule[i + 2] == 0):
                     complexity += 1
                     i += 3
         else:
             complexity += sum(rule)
     return complexity
 
+
 # Computar µ_a dado un u_i y una regla
-def getMuAPast(muArray,rule):
+def getMuAPast(muArray, rule):
 
     # Multiplicar muArray con la regla para "eliminar" los set difusos sin usar
 
     maxArray = []
 
     for i in [0, 3, 6, 9]:
-        if rule[i:i+3] != [0, 0, 0]:  # No importa acerca de este parametro
-            maxArray.append(max([muArray[j] * rule[j] for j in range(i, i+3)]))
+        if rule[i : i + 3] != [0, 0, 0]:  # No importa acerca de este parametro
+            maxArray.append(max([muArray[j] * rule[j] for j in range(i, i + 3)]))
 
     # muA = min( [ max(muValues[i:i+3]) for i in [0,3,6,9] ] )
     if maxArray == []:  # Regla incorrecta?
@@ -283,6 +293,7 @@ def getMuAPast(muArray,rule):
 # Capaz se prefiera preprocesar muArray para todos los elementos
 # Para no computar cada vez
 
+
 # Devuelve la clase predicha por la regla
 def getClassFromRule(rule):
     # Se computa qué tan bien se da esa clase para esta regla
@@ -290,10 +301,14 @@ def getClassFromRule(rule):
     # Modificar aqui para obtener + o - clases (target)
     for classNumber in range(3):
         classArray = data.getClassArray(classNumber)
-        competitionStrength[classNumber] += np.dot(classArray,rule)
+        competitionStrength[classNumber] += np.dot(classArray, rule)
     maxIndex = getMaxIndex(competitionStrength)
-    print("La clase para esta regla es la clase " + str(maxIndex) + \
-          " con un puntaje: " + str(competitionStrength[maxIndex]))
+    print(
+        "La clase para esta regla es la clase "
+        + str(maxIndex)
+        + " con un puntaje: "
+        + str(competitionStrength[maxIndex])
+    )
     return maxIndex, competitionStrength
 
 
@@ -304,9 +319,8 @@ def getMaxIndex(l):
     else:
         max = l[0]
         index = 0
-        for i in range(1,len(l)):
+        for i in range(1, len(l)):
             if l[i] > max:
                 max = l[i]
                 index = i
         return index
-
