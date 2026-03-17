@@ -48,8 +48,12 @@ def toCacheString(rule, data_row):
 
 
 def generateRule():
-    """
-    Generar reglas aleatorias
+    """Generar regla difusa aleatoria
+
+    Returns
+    -------
+    randBits: array
+        Regla difusa aleatoria
     """
     randBits = []
     randRule = randint(0, pow(2, 12) - 1)
@@ -262,6 +266,23 @@ def getMuA(rule, data_row, fuzzy_set=triangle_set):
 
 
 def getPredictedConfVect(confVect, muAVect, n_classes=N_CLASSES):
+    """Obtener el vector de confianza predicho para cada clase basado en el vector de confianza
+       de cada regla y el vector de mutación de cada regla
+
+    Parameters
+    ----------
+    confVect : list
+        vector de confianza de cada regla
+    muAVect : list
+        vector de mutación de cada regla
+    n_classes : int, optional
+        Número de clases, por defecto N_CLASSES
+
+    Returns
+    -------
+    list
+        vector de confianza predicho para cada clase
+    """
     # Modificar aqui para obtener + o - clases (target)
     predictedConfVect = np.zeros(n_classes, int)
     cnt = np.ones(n_classes, int)
@@ -278,15 +299,65 @@ def getPredictedConfVect(confVect, muAVect, n_classes=N_CLASSES):
 
 
 def getMuAVect(rules, data_row):
+    """Obtener el vector de mutación para cada regla basado en la fila de datos dada
+
+    Parameters
+    ----------
+    rules : list
+        Lista de reglas difusas
+    data_row : pandas.Series
+        Conjunto de datos de acciones
+
+    Returns
+    -------
+    list
+        vector de mutación para cada regla
+    """
     return [getMuA(rule, data_row) for rule in rules]
 
 
-# Obtener la mejor clase y su porcentaje de confianza de cada regla
 def getConfVect(rules, X, y):
+    """Obtener la mejor clase y su porcentaje de confianza de cada regla
+
+    Parameters
+    ----------
+    rules : list
+        Lista de reglas difusas
+    X : dataframe
+        Datos de acciones (entrada)
+    y : dataframe
+        Datos de clasificación (salida)
+
+    Returns
+    -------
+        list
+            vector de confianza de cada regla con su clase correspondiente
+    """
     return [getConf(rule, X, y) for rule in rules]
 
 
 def getPredictedClass(rules, X_data, y_data, data_row):
+    """Obtener la clase predicha y su porcentaje de confianza basado en las reglas dadas,
+       los datos de entrenamiento y la fila de datos dada
+
+    Parameters
+    ----------
+    rules : list
+        Lista de reglas difusas
+    X_data : dataframe
+        Datos de acciones (entrada)
+    y_data : dataframe
+        Datos de clasificación (salida)
+    data_row : pandas.Series
+        Conjunto de datos de acciones para la fila dada
+
+    Returns
+    -------
+        predictedClass : int
+            Clase predicha basada en las reglas dadas y la fila de datos dada
+        predictedConf : int
+            Porcentaje de confianza de la clase predicha
+    """
     predictedConfVect = getPredictedConfVect(
         getConfVect(rules, X_data, y_data), getMuAVect(rules, data_row)
     )
@@ -297,6 +368,24 @@ def getPredictedClass(rules, X_data, y_data, data_row):
 
 
 def getPredictedClasses(indiv, X_data, y_data):
+    """Obtener la clase predicha para cada fila de datos basado en las reglas dadas,
+       los datos de entrenamiento y la fila de datos dada
+
+    Parameters
+    ----------
+    indiv : array
+        Individuo
+    X_data : dataframe
+        Datos de acciones (entrada)
+    y_data : dataframe
+        Datos de clasificación (salida)
+
+    Returns
+    -------
+        predictedClassArray : list
+            Lista de clases predichas para cada fila de datos basada en las reglas dadas
+            y los datos de entrenamiento
+    """
     predictedClassArray = []
     for _, data_row in X_data.iterrows():
         predictedClass, predictedConf = getPredictedClass(
@@ -307,12 +396,42 @@ def getPredictedClasses(indiv, X_data, y_data):
 
 
 def getAccuracy(indiv, X, y):
+    """Obtener el porcentaje de clasificación correcta basado en las reglas dadas
+
+    Parameters
+    ----------
+    indiv : array
+        Individuo
+    X : dataframe
+        Datos de acciones (entrada)
+    y : dataframe
+        Datos de clasificación (salida)
+
+    Returns
+    -------
+    score : int
+        Porcentaje de clasificación correcta basado en las reglas dadas y los datos de entrenamiento
+    """
     predictedClassArray = getPredictedClasses(indiv, X, y)
     score = accuracy_score(y, predictedClassArray)
     return score
 
 
 def calcComplexity(indiv, dontCare=True):
+    """Calcular la complejidad de un individuo basado en el número de reglas activas que tiene
+
+    Parameters
+    ----------
+    indiv : array
+        Individuo
+    dontCare : bool, optional
+        Si se cuenta la regla joker como regla activa o no, por defecto True
+
+    Returns
+    -------
+    complexity : int
+        Complejidad del individuo basado en el número de reglas activas que tiene
+    """
     complexity = 0
     for rule in indiv.rules:
         if dontCare:
