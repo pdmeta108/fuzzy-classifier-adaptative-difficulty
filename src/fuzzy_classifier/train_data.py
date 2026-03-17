@@ -73,9 +73,9 @@ def getClassArray(classNumber, X_train, y_train):
     classNumber : int
         Numero de clasificación de la regla
     X_train : dataframe
-        Datos de acciones (entrada)
+        Datos de entrenamiento (observación)
     y_train : dataframe
-        Datos de clasificación (salida)
+        Datos de entrenamiento (acción)
 
     Returns
     -------
