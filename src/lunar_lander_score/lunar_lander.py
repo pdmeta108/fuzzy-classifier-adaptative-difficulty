@@ -881,5 +881,11 @@ class LunarLanderContinuous:
 
 
 if __name__ == "__main__":
-    env = gym.make("LunarLander-v3", render_mode="human")
+    # Register the environment so we can create it with gym.make()
+    gym.register(
+        id="lunar_fuzzy/LunarLanderFuzzy-v0",
+        entry_point=LunarLander,
+        max_episode_steps=1000,  # Prevent infinite episodes
+    )
+    env = gym.make("lunar_fuzzy/LunarLanderFuzzy-v0", render_mode="human")
     demo_heuristic_lander(env, render=True)
