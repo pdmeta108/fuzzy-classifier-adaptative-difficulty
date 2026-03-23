@@ -55,6 +55,7 @@ MAIN_ENGINE_Y_LOCATION = (
 VIEWPORT_W = 600
 VIEWPORT_H = 400
 
+WHITE = (255, 255, 255)
 
 class ContactDetector(contactListener):
     def __init__(self, env):
@@ -687,12 +688,29 @@ class LunarLander(gym.Env, EzPickle):
         if self.screen is None and self.render_mode == "human":
             pygame.init()
             pygame.display.init()
+            pygame.font.init()
             self.screen = pygame.display.set_mode((VIEWPORT_W, VIEWPORT_H))
         if self.clock is None:
             self.clock = pygame.time.Clock()
 
         self.surf = pygame.Surface((VIEWPORT_W, VIEWPORT_H))
 
+        # 2. Create a Font object
+        # Use the default system font, or specify a font file path (e.g., 'font.ttf')
+        # You can use pygame.font.SysFont to access system fonts
+        font = pygame.font.SysFont("Arial", 36) # Using 'Arial' font with size 36
+
+        # 3. Render the text to a Surface
+        # Arguments: text string, antialias (True/False), text color, optional background color
+        text_surface = font.render("Hello, Pygame!", True, WHITE)
+
+        # Get a rectangle for positioning
+        text_rect = text_surface.get_rect()
+
+        # Center the text on the screen
+        text_rect.center = (VIEWPORT_W // 2, VIEWPORT_H // 2)
+
+        # Center the text on the screen
         pygame.transform.scale(self.surf, (SCALE, SCALE))
         pygame.draw.rect(self.surf, (255, 255, 255), self.surf.get_rect())
 
@@ -769,11 +787,17 @@ class LunarLander(gym.Env, EzPickle):
                         (204, 204, 0),
                     )
 
+         # TODO Draw text
+        # pygame.draw.line(self.surf, pygame.Color("Yellow"), (VIEWPORT_W / 4, 0), (VIEWPORT_W / 4, VIEWPORT_H), 3)
+        # pygame.draw.line(self.surf, pygame.Color("Red"), (3 * VIEWPORT_W / 4, 0), (3 * VIEWPORT_W / 4, VIEWPORT_H), 3)
+
         self.surf = pygame.transform.flip(self.surf, False, True)
 
         if self.render_mode == "human":
             assert self.screen is not None
             self.screen.blit(self.surf, (0, 0))
+            # 4. Blit the text surface onto the screen
+            self.screen.blit(text_surface, text_rect)
             pygame.event.pump()
             self.clock.tick(self.metadata["render_fps"])
             pygame.display.flip()
@@ -887,5 +911,9 @@ if __name__ == "__main__":
         entry_point=LunarLander,
         max_episode_steps=1000,  # Prevent infinite episodes
     )
-    env = gym.make("lunar_fuzzy/LunarLanderFuzzy-v0", render_mode="human")
-    demo_heuristic_lander(env, render=True)
+    env = gym.make(
+        "lunar_fuzzy/LunarLanderFuzzy-v0",
+        gravity=-11,
+        render_mode="human")
+
+    demo_heuristic_lander(env, seed=67, render=True)
