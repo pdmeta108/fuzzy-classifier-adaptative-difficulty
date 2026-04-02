@@ -10,6 +10,7 @@ from gymnasium import error, spaces
 from gymnasium.error import DependencyNotInstalled
 from gymnasium.utils import EzPickle
 from gymnasium.utils.step_api_compatibility import step_api_compatibility
+from gymnasium.wrappers import RecordEpisodeStatistics, RenderCollection
 
 
 try:
@@ -872,23 +873,45 @@ def heuristic(env, s):
 def demo_heuristic_lander(env, seed=None, render=False):
     total_reward = 0
     steps = 0
+    episodes = 0
     s, info = env.reset(seed=seed)
     while True:
-        a = heuristic(env, s)
-        s, r, terminated, truncated, info = step_api_compatibility(env.step(a), True)
-        total_reward += r
+        while episodes < 10:
+            a = heuristic(env, s)
+            s, r, terminated, truncated, info = step_api_compatibility(env.step(a), True)
+            total_reward += r
 
-        if render:
-            still_open = env.render()
-            if still_open is False:
-                break
+            if render:
+                still_open = env.render()
+                if still_open is False:
+                    break
 
-        if steps % 20 == 0 or terminated or truncated:
-            print("observations:", " ".join([f"{x:+0.2f}" for x in s]))
-            print(f"step {steps} total_reward {total_reward:+0.2f}")
-        steps += 1
-        if terminated or truncated:
-            break
+            if steps % 20 == 0 or terminated or truncated:
+                print("observations:", " ".join([f"{x:+0.2f}" for x in s]))
+                print(f"step {steps} total_reward {total_reward:+0.2f}")
+            steps += 1
+            if terminated or truncated:
+                episodes += 1
+                print(f"Episode {episodes} finished with reward {total_reward:+0.2f}")
+
+                s, info = env.reset(seed=seed)
+        # Calculo de metricas (promedios de puntaje, duración del juego, desviación estándar y tasa de éxito)
+        avg_reward = np.sum(env.return_queue)
+        avg_length = np.sum(env.length_queue)
+        std_reward = np.std(env.return_queue)
+        return_queue_array = [f"{x:.2f}" for x in env.return_queue]
+        avg_points = str(return_queue_array).replace("[","").replace("]","")
+        avg_actions = str(list(env.length_queue)).replace("[","").replace("]","")
+        time_game = str(list(env.time_queue)).replace("[","").replace("]","")
+        success_percentage = sum(1 for r in env.return_queue if r > 0) / len(env.return_queue)
+        print(f"Average Reward: {avg_reward:.2f}")
+        print(f"Average Length: {avg_length:.2f}")
+        print(f"Standard Deviation of Reward: {std_reward:.2f}")
+        print(f"Rewards per episode: {avg_points}")
+        print(f"Actions per episode: {avg_actions}")
+        print(f"Time per episode: {time_game}")
+        print(f"Success Percentage: {success_percentage:.2%}")
+        break
     if render:
         env.close()
     return total_reward
@@ -915,5 +938,8 @@ if __name__ == "__main__":
         "lunar_fuzzy/LunarLanderFuzzy-v0",
         gravity=-11,
         render_mode="human")
+
+    env = RenderCollection(env, pop_frames=False, reset_clean=False)
+    env = RecordEpisodeStatistics(env, buffer_length=10)
 
     demo_heuristic_lander(env, seed=67, render=True)

@@ -218,62 +218,64 @@ if __name__ == "__main__":
 
     # Entrenamiento de datos
     X_train, X_test, y_train, y_test = getTrainedLanderData()
-    # Crear clase poblacion para comenzar a generar reglas
 
-    pop = Population(True)
-    # Se realiza en cada generacion el proceso de torneo y mutacion
+# Proceso de algoritmo genetico
+# Crear clase poblacion para comenzar a generar reglas
 
-    fit_rules = []
+    # pop = Population(True)
+    # # Se realiza en cada generacion el proceso de torneo y mutacion
 
-    for i in range(GENERATION_NUMBER):
-        newpop = Population(False)
-        print("Generacion numero : {}".format(str(i + 1)))
+    # fit_rules = []
 
-        for j in range(popSize):
-            # Proceso de torneo
-            parent1 = tournament(pop, X_train, y_train)
-            parent2 = tournament(pop, X_train, y_train)
+    # for i in range(GENERATION_NUMBER):
+    #     newpop = Population(False)
+    #     print("Generacion numero : {}".format(str(i + 1)))
 
-            child = crossOver(parent1, parent2)
-            newpop.listpop.append(child)
+    #     for j in range(popSize):
+    #         # Proceso de torneo
+    #         parent1 = tournament(pop, X_train, y_train)
+    #         parent2 = tournament(pop, X_train, y_train)
 
-        for j in range(popSize):
-            # Proceso de mutacion
-            mutation(newpop.listpop[j])
+    #         child = crossOver(parent1, parent2)
+    #         newpop.listpop.append(child)
 
-        pop = newpop
-        s = ""
-        # Mostrar el mejor set de reglas en la poblacion
-        thisFittest = pop.getFittest(X_train, y_train)
-        print(
-            "Mejor precision ajustada : {}".format(
-                str(generate_rule_classifier.getAccuracy(thisFittest, X_train, y_train))
-            )
-        )
-        # Guardar cada set de reglas para imprimir
-        for i in range(nbRules):
-            s += "Regla " + str(i) + ": " + str(thisFittest.rules[i]) + "\t"
-            s += (
-                str(
-                    generate_rule_classifier.getConf(
-                        thisFittest.rules[i], X_train, y_train
-                    )
-                )
-                + "\n"
-            )
-        print(s)
-        fit_rules.append(
-            generate_rule_classifier.getAccuracy(thisFittest, X_train, y_train)
-        )
+    #     for j in range(popSize):
+    #         # Proceso de mutacion
+    #         mutation(newpop.listpop[j])
 
-    # Mostrar la complejidad del set de reglas
-    print(
-        "Calculo de complejidad final: {}".format(
-            generate_rule_classifier.calcComplexity(thisFittest)
-        )
-    )
-    # Obtener set de reglas con salida y guardar en Main()
-    reglas, salidas = getRulesfromFittest(thisFittest, X_test, y_test)
+    #     pop = newpop
+    #     s = ""
+    #     # Mostrar el mejor set de reglas en la poblacion
+    #     thisFittest = pop.getFittest(X_train, y_train)
+    #     print(
+    #         "Mejor precision ajustada : {}".format(
+    #             str(generate_rule_classifier.getAccuracy(thisFittest, X_train, y_train))
+    #         )
+    #     )
+    #     # Guardar cada set de reglas para imprimir
+    #     for i in range(nbRules):
+    #         s += "Regla " + str(i) + ": " + str(thisFittest.rules[i]) + "\t"
+    #         s += (
+    #             str(
+    #                 generate_rule_classifier.getConf(
+    #                     thisFittest.rules[i], X_train, y_train
+    #                 )
+    #             )
+    #             + "\n"
+    #         )
+    #     print(s)
+    #     fit_rules.append(
+    #         generate_rule_classifier.getAccuracy(thisFittest, X_train, y_train)
+    #     )
+
+    # # Mostrar la complejidad del set de reglas
+    # print(
+    #     "Calculo de complejidad final: {}".format(
+    #         generate_rule_classifier.calcComplexity(thisFittest)
+    #     )
+    # )
+    # # Obtener set de reglas con salida y guardar en Main()
+    # reglas, salidas = getRulesfromFittest(thisFittest, X_test, y_test)
     # rule_class = generate_rule_classifier.generateRules(N_INDIV, N_VARS)
     # print(rule_class, type(rule_class))
     # print(X_test.loc[0], type(X_test.loc[0]))
