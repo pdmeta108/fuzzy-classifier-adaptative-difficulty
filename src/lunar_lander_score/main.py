@@ -1,6 +1,7 @@
 import sys
 import numpy as np
 from random import randint, random, uniform
+import typer
 
 # setting path
 sys.path.append("../")
@@ -8,9 +9,12 @@ sys.path.append("../")
 from fuzzy_classifier.train_data import getTrainedLanderData
 from fuzzy_classifier import generate_rule_classifier
 from inferfuzzy import var
+from inferfuzzy.membership import Membership
 from inferfuzzy.memberships import (
     LMembership,
 )
+from inferfuzzy.systems import MamdaniSystem
+from inferfuzzy.defuzzifications import centroid_defuzzification
 
 #### Numero de reglas base ####
 nbRules = 8
@@ -207,17 +211,66 @@ def getSubClassValue(parametro_box, subclase):
     else:
         return 0
 
+class SingletonMembership(Membership):
+    def __init__(self, a):
+        def func(x):
+            return 1.0 if x == a else 0.0
+
+        super(SingletonMembership, self).__init__(func, [a])
 
 if __name__ == "__main__":
     # conjunto difuso triangular
-    triangle_set = var.Var("triangle set")
-    triangle_set += "bajo", LMembership(-0.5, 0.5)
-    triangle_set += "medio", LMembership(0, 1)
-    triangle_set += "alto", LMembership(0.5, 1.5)
-    # print("variable triangulo", triangle_set)
+    time_set = var.Var("time")
+    time_set += "bajo", LMembership(-0.5, 0.5)
+    time_set += "medio", LMembership(0, 1)
+    time_set += "alto", LMembership(0.5, 1.5)
+    print("variable tiempo", time_set)
+
+    reward_set = var.Var("reward")
+    reward_set += "bajo", LMembership(-0.5, 0.5)
+    reward_set += "medio", LMembership(0, 1)
+    reward_set += "alto", LMembership(0.5, 1.5)
+    print("variable puntacion", reward_set)
+
+    win_set = var.Var("win")
+    win_set += "bajo", LMembership(-0.5, 0.5)
+    win_set += "medio", LMembership(0, 1)
+    win_set += "alto", LMembership(0.5, 1.5)
+    print("variable exito", win_set)
+
+    gravity_set = var.Var("gravity")
+    gravity_set += "bajar", SingletonMembership(1)
+    gravity_set += "subir", SingletonMembership(100)
+
+    mamdani = MamdaniSystem(
+        defuzz_func=centroid_defuzzification,
+    )
+
+    mamdani += (
+        time_set.into("bajo")
+        & reward_set.into("alto")
+        & win_set.into("alto")
+    ), gravity_set.into("subir")
+
+    mamdani += (
+        time_set.into("alto")
+        & win_set.into("bajo")
+    ), gravity_set.into("bajar")
+
+    time_val = typer.prompt("Input time value", type=float)
+    reward_val = typer.prompt("Input reward value", type=float)
+    win_val = typer.prompt("Input win percent", type=float)
+
+    mamdani_result: float = mamdani.infer(
+        time=time_val,
+        reward=reward_val,
+        win=win_val,
+    )["gravity"]
+
+    typer.echo(f"Mamdani: {'{:.2f}'.format(mamdani_result)}%")
 
     # Entrenamiento de datos
-    X_train, X_test, y_train, y_test = getTrainedLanderData()
+    # X_train, X_test, y_train, y_test = getTrainedLanderData()
 
 # Proceso de algoritmo genetico
 # Crear clase poblacion para comenzar a generar reglas
