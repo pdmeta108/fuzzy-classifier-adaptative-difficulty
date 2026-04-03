@@ -700,16 +700,22 @@ class LunarLander(gym.Env, EzPickle):
         # Use the default system font, or specify a font file path (e.g., 'font.ttf')
         # You can use pygame.font.SysFont to access system fonts
         font = pygame.font.SysFont("Arial", 36) # Using 'Arial' font with size 36
+        font_gui = pygame.font.SysFont("Arial", 18)
 
         # 3. Render the text to a Surface
         # Arguments: text string, antialias (True/False), text color, optional background color
         text_surface = font.render("Hello, Pygame!", True, WHITE)
+        episode_surface = font_gui.render("Episodio: " + str(env.episode_count + 1), True, WHITE)
+        gravity_surface = font_gui.render("Gravedad: " + str(env.unwrapped.gravity), True, WHITE)
 
         # Get a rectangle for positioning
         text_rect = text_surface.get_rect()
-
+        episode_rect = episode_surface.get_rect()
+        gravity_rect = gravity_surface.get_rect()
         # Center the text on the screen
-        text_rect.center = (VIEWPORT_W // 2, VIEWPORT_H // 2)
+        text_rect.center = (VIEWPORT_W // 2, 50)
+        episode_rect.center = (60, 25)
+        gravity_rect.center = (70, 45)
 
         # Center the text on the screen
         pygame.transform.scale(self.surf, (SCALE, SCALE))
@@ -799,6 +805,8 @@ class LunarLander(gym.Env, EzPickle):
             self.screen.blit(self.surf, (0, 0))
             # 4. Blit the text surface onto the screen
             self.screen.blit(text_surface, text_rect)
+            self.screen.blit(episode_surface, episode_rect)
+            self.screen.blit(gravity_surface, gravity_rect)
             pygame.event.pump()
             self.clock.tick(self.metadata["render_fps"])
             pygame.display.flip()
@@ -904,17 +912,10 @@ def demo_heuristic_lander(env, seed=None, render=False):
         avg_actions = str(list(env.length_queue)).replace("[","").replace("]","")
         time_game = str(list(env.time_queue)).replace("[","").replace("]","")
         success_percentage = sum(1 for r in env.return_queue if r > 0) / len(env.return_queue)
-        print(f"Average Reward: {avg_reward:.2f}")
-        print(f"Average Length: {avg_length:.2f}")
-        print(f"Standard Deviation of Reward: {std_reward:.2f}")
-        print(f"Rewards per episode: {avg_points}")
-        print(f"Actions per episode: {avg_actions}")
-        print(f"Time per episode: {time_game}")
-        print(f"Success Percentage: {success_percentage:.2%}")
         break
     if render:
         env.close()
-    return total_reward
+    return avg_reward, avg_length, std_reward, avg_points, avg_actions, time_game, success_percentage
 
 
 class LunarLanderContinuous:
@@ -942,4 +943,11 @@ if __name__ == "__main__":
     env = RenderCollection(env, pop_frames=False, reset_clean=False)
     env = RecordEpisodeStatistics(env, buffer_length=10)
 
-    demo_heuristic_lander(env, seed=67, render=True)
+    avg_reward, avg_length, std_reward, avg_points, avg_actions, time_game, success_percentage = demo_heuristic_lander(env, seed=67, render=True)
+    print(f"Average Reward: {avg_reward:.2f}")
+    print(f"Average Length: {avg_length:.2f}")
+    print(f"Standard Deviation of Reward: {std_reward:.2f}")
+    print(f"Rewards per episode: {avg_points}")
+    print(f"Actions per episode: {avg_actions}")
+    print(f"Time per episode: {time_game}")
+    print(f"Success Percentage: {success_percentage:.2%}")

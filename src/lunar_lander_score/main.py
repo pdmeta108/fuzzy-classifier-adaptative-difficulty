@@ -242,10 +242,12 @@ if __name__ == "__main__":
     gravity_set += "bajar", SingletonMembership(1)
     gravity_set += "subir", SingletonMembership(100)
 
+    # Sistema de Inferencia difusa
     mamdani = MamdaniSystem(
         defuzz_func=centroid_defuzzification,
     )
 
+    # Reglas difusas
     mamdani += (
         time_set.into("bajo")
         & reward_set.into("alto")
@@ -257,17 +259,18 @@ if __name__ == "__main__":
         & win_set.into("bajo")
     ), gravity_set.into("bajar")
 
-    time_val = typer.prompt("Input time value", type=float)
-    reward_val = typer.prompt("Input reward value", type=float)
-    win_val = typer.prompt("Input win percent", type=float)
+    # Test
+    # time_val = typer.prompt("Input time value", type=float)
+    # reward_val = typer.prompt("Input reward value", type=float)
+    # win_val = typer.prompt("Input win percent", type=float)
 
-    mamdani_result: float = mamdani.infer(
-        time=time_val,
-        reward=reward_val,
-        win=win_val,
-    )["gravity"]
+    # mamdani_result: float = mamdani.infer(
+    #     time=time_val,
+    #     reward=reward_val,
+    #     win=win_val,
+    # )["gravity"]
 
-    typer.echo(f"Mamdani: {'{:.2f}'.format(mamdani_result)}%")
+    # typer.echo(f"Mamdani: {'{:.2f}'.format(mamdani_result)}%")
 
     # Entrenamiento de datos
     # X_train, X_test, y_train, y_test = getTrainedLanderData()
