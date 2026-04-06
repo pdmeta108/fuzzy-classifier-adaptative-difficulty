@@ -4,7 +4,7 @@ import math
 from typing import TYPE_CHECKING
 
 import numpy as np
-
+from fuzzy_inference_system import get_lunar_lander_inference_system as infer_system
 import gymnasium as gym
 from gymnasium import error, spaces
 from gymnasium.error import DependencyNotInstalled
@@ -884,7 +884,7 @@ def demo_heuristic_lander(env, seed=None, render=False):
     episodes = 0
     s, info = env.reset(seed=seed)
     while True:
-        while episodes < 10:
+        while episodes < 3:
             a = heuristic(env, s)
             s, r, terminated, truncated, info = step_api_compatibility(env.step(a), True)
             total_reward += r
@@ -929,6 +929,13 @@ class LunarLanderContinuous:
 
 
 if __name__ == "__main__":
+
+    lunar_difficulty_gravity = -8
+    level_seed = 67
+    min_time = 5
+    max_time = 300
+    min_points = 0
+    max_points = 250
     # Register the environment so we can create it with gym.make()
     gym.register(
         id="lunar_fuzzy/LunarLanderFuzzy-v0",
@@ -937,16 +944,71 @@ if __name__ == "__main__":
     )
     env = gym.make(
         "lunar_fuzzy/LunarLanderFuzzy-v0",
-        gravity=-11,
+        gravity=lunar_difficulty_gravity,
         render_mode="human")
 
     env = RenderCollection(env, pop_frames=False, reset_clean=False)
     env = RecordEpisodeStatistics(env, buffer_length=10)
 
-    avg_reward, avg_length, std_reward, avg_points, avg_actions, time_game, success_percentage = demo_heuristic_lander(env, seed=67, render=True)
-    print(f"Average Reward: {avg_reward:.2f}")
-    print(f"Average Length: {avg_length:.2f}")
+    # Obtener resultado de ambiente
+    avg_reward, avg_length, std_reward, avg_points, avg_actions, time_game, success_percentage = demo_heuristic_lander(env, seed=level_seed, render=True)
+    print(f"Total Reward: {avg_reward:.2f}")
     print(f"Standard Deviation of Reward: {std_reward:.2f}")
+    print(f"Total Length: {avg_length:.2f}")
+    print(f"Rewards per episode: {avg_points}")
+    print(f"Actions per episode: {avg_actions}")
+    print(f"Time per episode: {time_game}")
+    print(f"Success Percentage: {success_percentage:.2%}")
+
+    # Transformar array en numpy
+    float_array = [round(float(x), 3) for x in time_game.split(", ")]
+    float_array_points = [round(float(x.replace("'", "")), 3) for x in avg_points.split(", ")]
+    norm_time = np.asarray(float_array, dtype=np.float32)
+    norm_points = np.asarray(float_array_points, dtype=np.float32)
+    norm_win = success_percentage / 100
+
+    # Normalizar los datos
+    # res_time = (norm_time - min_time) / (max_time - min_time)
+    # res_points = (norm_points - min_points) / (max_points - min_points)
+    # res_time = np.where(res_time > 1, 1, res_time)
+    # res_points = np.where(res_points > 1, 1, res_points)
+
+    mamdani = infer_system()
+    print(mamdani)
+
+    # Realizar la inferencia utilizando el sistema difuso
+    mamdani_result: float = mamdani.infer(
+        time=norm_time.mean(),
+        reward=norm_points.mean(),
+        win=norm_win,
+    )["gravity"]
+
+    print(f"Gravity: {mamdani_result:.2f}")
+    if (mamdani_result < 50):
+        print("Aumentar el nivel de dificultad.")
+        lunar_difficulty_gravity -= 2
+        if lunar_difficulty_gravity < -11:
+            lunar_difficulty_gravity = -11.5
+    else:
+        print("Disminuir el nivel de dificultad.")
+        lunar_difficulty_gravity += 2
+        if lunar_difficulty_gravity >= 0:
+            lunar_difficulty_gravity = -0.5
+
+    # Correr juego nuevo con otra dificultad
+    env = gym.make(
+        "lunar_fuzzy/LunarLanderFuzzy-v0",
+        gravity=lunar_difficulty_gravity,
+        render_mode="human")
+
+    env = RenderCollection(env, pop_frames=False, reset_clean=False)
+    env = RecordEpisodeStatistics(env, buffer_length=10)
+
+    # Obtener resultado de ambiente
+    avg_reward, avg_length, std_reward, avg_points, avg_actions, time_game, success_percentage = demo_heuristic_lander(env, seed=level_seed, render=True)
+    print(f"Total Reward: {avg_reward:.2f}")
+    print(f"Standard Deviation of Reward: {std_reward:.2f}")
+    print(f"Total Length: {avg_length:.2f}")
     print(f"Rewards per episode: {avg_points}")
     print(f"Actions per episode: {avg_actions}")
     print(f"Time per episode: {time_game}")
