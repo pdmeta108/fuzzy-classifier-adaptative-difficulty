@@ -9,6 +9,7 @@ import gymnasium as gym
 from gymnasium import error, spaces
 from gymnasium.error import DependencyNotInstalled
 from gymnasium.utils import EzPickle
+from gymnasium.utils.play import play
 from gymnasium.utils.step_api_compatibility import step_api_compatibility
 from gymnasium.wrappers import RecordEpisodeStatistics, RenderCollection
 
@@ -57,6 +58,15 @@ VIEWPORT_W = 600
 VIEWPORT_H = 400
 
 WHITE = (255, 255, 255)
+
+# Teclas de acciones del jugador
+keyboard_act = {
+    "d": 3,
+    "sd": 3,
+    "s": 2,
+    "a": 1,
+    "as": 1,
+}
 
 class ContactDetector(contactListener):
     def __init__(self, env):
@@ -689,11 +699,12 @@ class LunarLander(gym.Env, EzPickle):
         if self.screen is None and self.render_mode == "human":
             pygame.init()
             pygame.display.init()
-            pygame.font.init()
+            # pygame.font.init()
             self.screen = pygame.display.set_mode((VIEWPORT_W, VIEWPORT_H))
         if self.clock is None:
             self.clock = pygame.time.Clock()
 
+        pygame.font.init()
         self.surf = pygame.Surface((VIEWPORT_W, VIEWPORT_H))
 
         # 2. Create a Font object
@@ -707,15 +718,18 @@ class LunarLander(gym.Env, EzPickle):
         text_surface = font.render("Hello, Pygame!", True, WHITE)
         episode_surface = font_gui.render("Episodio: " + str(env.episode_count + 1), True, WHITE)
         gravity_surface = font_gui.render("Gravedad: " + str(env.unwrapped.gravity), True, WHITE)
+        wind_surface = font_gui.render("Viento poder: " + str(env.unwrapped.wind_power), True, WHITE)
 
         # Get a rectangle for positioning
         text_rect = text_surface.get_rect()
         episode_rect = episode_surface.get_rect()
         gravity_rect = gravity_surface.get_rect()
+        wind_rect = wind_surface.get_rect()
         # Center the text on the screen
         text_rect.center = (VIEWPORT_W // 2, 50)
         episode_rect.center = (60, 25)
         gravity_rect.center = (70, 45)
+        wind_rect.center = (80, 65)
 
         # Center the text on the screen
         pygame.transform.scale(self.surf, (SCALE, SCALE))
@@ -807,6 +821,7 @@ class LunarLander(gym.Env, EzPickle):
             self.screen.blit(text_surface, text_rect)
             self.screen.blit(episode_surface, episode_rect)
             self.screen.blit(gravity_surface, gravity_rect)
+            self.screen.blit(wind_surface, wind_rect)
             pygame.event.pump()
             self.clock.tick(self.metadata["render_fps"])
             pygame.display.flip()
@@ -973,18 +988,26 @@ if __name__ == "__main__":
     # res_time = np.where(res_time > 1, 1, res_time)
     # res_points = np.where(res_points > 1, 1, res_points)
 
-    mamdani = infer_system()
-    print(mamdani)
+    mamdani_gravity = infer_system()
+    mamdani_wind = infer_system("wind")
+    print(mamdani_gravity)
 
     # Realizar la inferencia utilizando el sistema difuso
-    mamdani_result: float = mamdani.infer(
+    mamdani_result_gravity: float = mamdani_gravity.infer(
         time=norm_time.mean(),
         reward=norm_points.mean(),
         win=norm_win,
     )["gravity"]
 
-    print(f"Gravity: {mamdani_result:.2f}")
-    if (mamdani_result < 50):
+    mamdani_result_wind: float = mamdani_wind.infer(
+        time=norm_time.mean(),
+        reward=norm_points.mean(),
+        win=norm_win,
+    )["wind"]
+
+    print(f"Gravity: {mamdani_result_gravity:.2f}")
+    print(f"Wind power: {mamdani_result_wind:.2f}")
+    if (mamdani_result_gravity < 50):
         print("Aumentar el nivel de dificultad.")
         lunar_difficulty_gravity -= 2
         if lunar_difficulty_gravity < -11:
@@ -996,10 +1019,12 @@ if __name__ == "__main__":
             lunar_difficulty_gravity = -0.5
 
     # Correr juego nuevo con otra dificultad
-    env = gym.make(
+    env = play(gym.make(
         "lunar_fuzzy/LunarLanderFuzzy-v0",
-        gravity=lunar_difficulty_gravity,
-        render_mode="human")
+        gravity=round(mamdani_result_gravity, 2),
+        enable_wind=False,
+        wind_power=round(mamdani_result_wind, 2),
+        render_mode="rgb_array"), keys_to_action=keyboard_act, fps=30)
 
     env = RenderCollection(env, pop_frames=False, reset_clean=False)
     env = RecordEpisodeStatistics(env, buffer_length=10)
