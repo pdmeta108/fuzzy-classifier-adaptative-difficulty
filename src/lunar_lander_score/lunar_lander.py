@@ -2,14 +2,17 @@ __credits__ = ["Andrea PIERRÉ"]
 
 import math
 from typing import TYPE_CHECKING
+from collections.abc import Callable
 
 import numpy as np
 from fuzzy_inference_system import get_lunar_lander_inference_system as infer_system
 import gymnasium as gym
 from gymnasium import error, spaces
+from gymnasium import Env
+from gymnasium.core import ActType, ObsType
 from gymnasium.error import DependencyNotInstalled
 from gymnasium.utils import EzPickle
-from gymnasium.utils.play import play
+from gymnasium.utils.play import PlayableGame, MissingKeysToAction
 from gymnasium.utils.step_api_compatibility import step_api_compatibility
 from gymnasium.wrappers import RecordEpisodeStatistics, RenderCollection
 
@@ -24,6 +27,8 @@ try:
         polygonShape,
         revoluteJointDef,
     )
+    import pygame
+    from pygame import Surface
 except ImportError as e:
     raise DependencyNotInstalled(
         'Box2D is not installed, you can install it by run `pip install swig` followed by `pip install "gymnasium[box2d]"`'
@@ -942,6 +947,221 @@ class LunarLanderContinuous:
             'gym.make("LunarLander-v3", continuous=True)'
         )
 
+def display_arr(
+    screen: Surface, arr: np.ndarray, video_size: tuple[int, int], transpose: bool, ep_count, gravity, wind_power
+):
+    """Displays a numpy array on screen.
+
+    Args:
+        screen: The screen to show the array on
+        arr: The array to show
+        video_size: The video size of the screen
+        transpose: If to transpose the array on the screen
+    """
+    assert isinstance(arr, np.ndarray) and arr.dtype == np.uint8
+    pyg_img = pygame.surfarray.make_surface(arr.swapaxes(0, 1) if transpose else arr)
+    pyg_img = pygame.transform.scale(pyg_img, video_size)
+    # We might have to add black bars if surface_size is larger than video_size
+    surface_size = screen.get_size()
+
+    # 2. Create a Font object
+    # Use the default system font, or specify a font file path (e.g., 'font.ttf')
+    # You can use pygame.font.SysFont to access system fonts
+    font_gui = pygame.font.SysFont("Arial", 18)
+
+    # 3. Render the text to a Surface
+    # Arguments: text string, antialias (True/False), text color, optional background color
+    episode_surface = font_gui.render("Episodio: " + str(ep_count + 1), True, WHITE)
+    gravity_surface = font_gui.render("Gravedad: " + str(gravity), True, WHITE)
+    wind_surface = font_gui.render("Viento poder: " + str(wind_power), True, WHITE)
+
+    # Get a rectangle for positioning
+    episode_rect = episode_surface.get_rect()
+    gravity_rect = gravity_surface.get_rect()
+    wind_rect = wind_surface.get_rect()
+    # Center the text on the screen
+    episode_rect.center = (60, 25)
+    gravity_rect.center = (70, 45)
+    wind_rect.center = (80, 65)
+
+    # Center the text on the screen
+    pygame.transform.scale(screen, (SCALE, SCALE))
+    pygame.draw.rect(screen, (255, 255, 255), screen.get_rect())
+
+    width_offset = (surface_size[0] - video_size[0]) / 2
+    height_offset = (surface_size[1] - video_size[1]) / 2
+    screen.fill((0, 0, 0))
+    screen.blit(pyg_img, (width_offset, height_offset))
+    # 4. Blit the text surface onto the screen
+    screen.blit(episode_surface, episode_rect)
+    screen.blit(gravity_surface, gravity_rect)
+    screen.blit(wind_surface, wind_rect)
+
+def play(
+    env: Env,
+    transpose: bool | None = True,
+    fps: int | None = None,
+    zoom: float | None = None,
+    callback: Callable | None = None,
+    keys_to_action: dict[tuple[str | int, ...] | str | int, ActType] | None = None,
+    seed: int | None = None,
+    noop: ActType = 0,
+    wait_on_player: bool = False,
+):
+    """Allows the user to play the environment using a keyboard.
+
+    If playing in a turn-based environment, set wait_on_player to True.
+
+    Args:
+        env: Environment to use for playing.
+        transpose: If this is ``True``, the output of observation is transposed. Defaults to ``True``.
+        fps: Maximum number of steps of the environment executed every second. If ``None`` (the default),
+            ``env.metadata["render_fps""]`` (or 30, if the environment does not specify "render_fps") is used.
+        zoom: Zoom the observation in, ``zoom`` amount, should be positive float
+        callback: If a callback is provided, it will be executed after every step. It takes the following input:
+
+            * obs_t: observation before performing action
+            * obs_tp1: observation after performing action
+            * action: action that was executed
+            * rew: reward that was received
+            * terminated: whether the environment is terminated or not
+            * truncated: whether the environment is truncated or not
+            * info: debug info
+        keys_to_action:  Mapping from keys pressed to action performed.
+            Different formats are supported: Key combinations can either be expressed as a tuple of unicode code
+            points of the keys, as a tuple of characters, or as a string where each character of the string represents
+            one key.
+            For example if pressing 'w' and space at the same time is supposed
+            to trigger action number 2 then ``key_to_action`` dict could look like this:
+
+                >>> key_to_action = {
+                ...    # ...
+                ...    (ord('w'), ord(' ')): 2
+                ...    # ...
+                ... }
+
+            or like this:
+
+                >>> key_to_action = {
+                ...    # ...
+                ...    ("w", " "): 2
+                ...    # ...
+                ... }
+
+            or like this:
+
+                >>> key_to_action = {
+                ...    # ...
+                ...    "w ": 2
+                ...    # ...
+                ... }
+
+            If ``None``, default ``key_to_action`` mapping for that environment is used, if provided.
+        seed: Random seed used when resetting the environment. If None, no seed is used.
+        noop: The action used when no key input has been entered, or the entered key combination is unknown.
+        wait_on_player: Play should wait for a user action
+
+    Example:
+        >>> import gymnasium as gym
+        >>> import numpy as np
+        >>> from gymnasium.utils.play import play
+        >>> play(gym.make("CarRacing-v3", render_mode="rgb_array"),  # doctest: +SKIP
+        ...     keys_to_action={
+        ...         "w": np.array([0, 0.7, 0], dtype=np.float32),
+        ...         "a": np.array([-1, 0, 0], dtype=np.float32),
+        ...         "s": np.array([0, 0, 1], dtype=np.float32),
+        ...         "d": np.array([1, 0, 0], dtype=np.float32),
+        ...         "wa": np.array([-1, 0.7, 0], dtype=np.float32),
+        ...         "dw": np.array([1, 0.7, 0], dtype=np.float32),
+        ...         "ds": np.array([1, 0, 1], dtype=np.float32),
+        ...         "as": np.array([-1, 0, 1], dtype=np.float32),
+        ...     },
+        ...     noop=np.array([0, 0, 0], dtype=np.float32)
+        ... )
+
+        Above code works also if the environment is wrapped, so it's particularly useful in
+        verifying that the frame-level preprocessing does not render the game
+        unplayable.
+
+        If you wish to plot real time statistics as you play, you can use
+        :class:`PlayPlot`. Here's a sample code for plotting the reward
+        for last 150 steps.
+
+        >>> from gymnasium.utils.play import PlayPlot, play
+        >>> def callback(obs_t, obs_tp1, action, rew, terminated, truncated, info):
+        ...        return [rew,]
+        >>> plotter = PlayPlot(callback, 150, ["reward"])             # doctest: +SKIP
+        >>> play(gym.make("CartPole-v1"), callback=plotter.callback)  # doctest: +SKIP
+    """
+    env.reset(seed=seed)
+
+    if keys_to_action is None:
+        if env.has_wrapper_attr("get_keys_to_action"):
+            keys_to_action = env.get_wrapper_attr("get_keys_to_action")()
+        else:
+            assert env.spec is not None
+            raise MissingKeysToAction(
+                f"{env.spec.id} does not have explicit key to action mapping, "
+                "please specify one manually"
+            )
+
+    assert keys_to_action is not None
+
+    # validate the `keys_to_action` set provided
+    assert isinstance(keys_to_action, dict)
+    for key, action in keys_to_action.items():
+        if isinstance(key, tuple):
+            assert len(key) > 0
+            assert all(isinstance(k, (str, int)) for k in key)
+        else:
+            assert isinstance(key, (str, int))
+
+        assert action in env.action_space
+
+    key_code_to_action = {}
+    for key_combination, action in keys_to_action.items():
+        if isinstance(key_combination, int):
+            key_combination = (key_combination,)
+        key_code = tuple(
+            sorted(ord(key) if isinstance(key, str) else key for key in key_combination)
+        )
+        key_code_to_action[key_code] = action
+
+    game = PlayableGame(env, key_code_to_action, zoom)
+
+    if fps is None:
+        fps = env.metadata.get("render_fps", 30)
+
+    done, obs = True, None
+    clock = pygame.time.Clock()
+
+    while game.running:
+        if done:
+            done = False
+            obs = env.reset(seed=seed)
+        elif wait_on_player is False or len(game.pressed_keys) > 0:
+            action = key_code_to_action.get(tuple(sorted(game.pressed_keys)), noop)
+            prev_obs = obs
+            obs, rew, terminated, truncated, info = env.step(action)
+            done = terminated or truncated
+            if callback is not None:
+                callback(prev_obs, obs, action, rew, terminated, truncated, info)
+        if obs is not None:
+            rendered = env.render()
+            if isinstance(rendered, list):
+                rendered = rendered[-1]
+            assert rendered is not None and isinstance(rendered, np.ndarray)
+            display_arr(
+                game.screen, rendered, transpose=transpose, video_size=game.video_size, ep_count=5, gravity=env.unwrapped.gravity, wind_power=env.unwrapped.wind_power
+            )
+
+        # process pygame events
+        for event in pygame.event.get():
+            game.process_event(event)
+
+        pygame.display.flip()
+        clock.tick(fps)
+    pygame.quit()
 
 if __name__ == "__main__":
 
