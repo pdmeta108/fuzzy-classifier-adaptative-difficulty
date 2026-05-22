@@ -236,6 +236,7 @@ class LunarLander(gym.Env, EzPickle):
         enable_wind: bool = False,
         wind_power: float = 15.0,
         turbulence_power: float = 1.5,
+        level: int = 1,
     ):
         EzPickle.__init__(
             self,
@@ -277,6 +278,7 @@ class LunarLander(gym.Env, EzPickle):
         self.prev_reward = None
 
         self.continuous = continuous
+        self.level = level
 
         low = np.array(
             [
@@ -354,6 +356,7 @@ class LunarLander(gym.Env, EzPickle):
         self.world.contactListener = self.world.contactListener_keepref
         self.game_over = False
         self.prev_shaping = None
+        self.level += 1
 
         W = VIEWPORT_W / SCALE
         H = VIEWPORT_H / SCALE
@@ -721,9 +724,9 @@ class LunarLander(gym.Env, EzPickle):
         # 3. Render the text to a Surface
         # Arguments: text string, antialias (True/False), text color, optional background color
         text_surface = font.render("Hello, Pygame!", True, WHITE)
-        episode_surface = font_gui.render("Episodio: " + str(env.episode_count + 1), True, WHITE)
-        gravity_surface = font_gui.render("Gravedad: " + str(env.unwrapped.gravity), True, WHITE)
-        wind_surface = font_gui.render("Viento poder: " + str(env.unwrapped.wind_power), True, WHITE)
+        episode_surface = font_gui.render("Episodio: " + str(self.unwrapped.level + 1), True, WHITE)
+        gravity_surface = font_gui.render("Gravedad: " + str(self.unwrapped.unwrapped.gravity), True, WHITE)
+        wind_surface = font_gui.render("Viento poder: " + str(self.unwrapped.unwrapped.wind_power), True, WHITE)
 
         # Get a rectangle for positioning
         text_rect = text_surface.get_rect()
@@ -1180,6 +1183,7 @@ if __name__ == "__main__":
     env = gym.make(
         "lunar_fuzzy/LunarLanderFuzzy-v0",
         gravity=lunar_difficulty_gravity,
+        level=-1,
         render_mode="human")
 
     env = RenderCollection(env, pop_frames=False, reset_clean=False)
