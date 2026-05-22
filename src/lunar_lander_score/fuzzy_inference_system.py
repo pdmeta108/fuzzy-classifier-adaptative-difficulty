@@ -94,13 +94,17 @@ def get_lunar_lander_inference_system(consequent="gravity"):
 
     else:
         mamdani += (
-            time_set.into("bajo")
+            win_set.into("bajo")
+        ), wind_set.into("bajo")
+
+        mamdani += (
+            time_set.into("alto")
             & reward_set.into("alto")
             & win_set.into("alto")
-        ), wind_set.into("alto")
+        ), wind_set.into("medio")
 
         mamdani += (
             time_set.into("bajo") | reward_set.into("alto")
-        ), wind_set.into("medio")
+        ), wind_set.into("alto")
 
     return mamdani

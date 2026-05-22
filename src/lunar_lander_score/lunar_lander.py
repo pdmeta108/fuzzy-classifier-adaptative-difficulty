@@ -71,6 +71,11 @@ keyboard_act = {
     "s": 2,
     "a": 1,
     "as": 1,
+    "l": 3,
+    "kl": 3,
+    "k": 2,
+    "j": 1,
+    "kj": 1,
 }
 
 class ContactDetector(contactListener):
@@ -1164,11 +1169,22 @@ def play(
 
         pygame.display.flip()
         clock.tick(fps)
+    # Calculo de metricas (promedios de puntaje, duración del juego, desviación estándar y tasa de éxito)
+    avg_reward = np.sum(env.return_queue)
+    avg_length = np.sum(env.length_queue)
+    std_reward = np.std(env.return_queue)
+    return_queue_array = [f"{x:.2f}" for x in env.return_queue]
+    avg_points = str(return_queue_array).replace("[","").replace("]","")
+    avg_actions = str(list(env.length_queue)).replace("[","").replace("]","")
+    time_game = str(list(env.time_queue)).replace("[","").replace("]","")
+    success_percentage = sum(1 for r in env.return_queue if r > 0) / len(env.return_queue)
     pygame.quit()
+    return avg_reward, avg_length, std_reward, avg_points, avg_actions, time_game, success_percentage
 
 if __name__ == "__main__":
 
-    lunar_difficulty_gravity = -8
+    lunar_difficulty_gravity = -5
+    lunar_difficulty_wind = 0.4
     level_seed = 67
     min_time = 5
     max_time = 300
@@ -1180,85 +1196,142 @@ if __name__ == "__main__":
         entry_point=LunarLander,
         max_episode_steps=1000,  # Prevent infinite episodes
     )
-    env = gym.make(
-        "lunar_fuzzy/LunarLanderFuzzy-v0",
-        gravity=lunar_difficulty_gravity,
-        level=-1,
-        render_mode="human")
+    # env = gym.make(
+    #     "lunar_fuzzy/LunarLanderFuzzy-v0",
+    #     gravity=lunar_difficulty_gravity,
+    #     level=-1,
+    #     render_mode="human")
 
-    env = RenderCollection(env, pop_frames=False, reset_clean=False)
-    env = RecordEpisodeStatistics(env, buffer_length=10)
+    # env = RenderCollection(env, pop_frames=False, reset_clean=False)
+    # env = RecordEpisodeStatistics(env, buffer_length=10)
 
-    # Obtener resultado de ambiente
-    avg_reward, avg_length, std_reward, avg_points, avg_actions, time_game, success_percentage = demo_heuristic_lander(env, seed=level_seed, render=True)
-    print(f"Total Reward: {avg_reward:.2f}")
-    print(f"Standard Deviation of Reward: {std_reward:.2f}")
-    print(f"Total Length: {avg_length:.2f}")
-    print(f"Rewards per episode: {avg_points}")
-    print(f"Actions per episode: {avg_actions}")
-    print(f"Time per episode: {time_game}")
-    print(f"Success Percentage: {success_percentage:.2%}")
+    # # Obtener resultado de ambiente
+    # avg_reward, avg_length, std_reward, avg_points, avg_actions, time_game, success_percentage = demo_heuristic_lander(env, seed=level_seed, render=True)
+    # print(f"Total Reward: {avg_reward:.2f}")
+    # print(f"Standard Deviation of Reward: {std_reward:.2f}")
+    # print(f"Total Length: {avg_length:.2f}")
+    # print(f"Rewards per episode: {avg_points}")
+    # print(f"Actions per episode: {avg_actions}")
+    # print(f"Time per episode: {time_game}")
+    # print(f"Success Percentage: {success_percentage:.2%}")
 
-    # Transformar array en numpy
-    float_array = [round(float(x), 3) for x in time_game.split(", ")]
-    float_array_points = [round(float(x.replace("'", "")), 3) for x in avg_points.split(", ")]
-    norm_time = np.asarray(float_array, dtype=np.float32)
-    norm_points = np.asarray(float_array_points, dtype=np.float32)
-    norm_win = success_percentage / 100
+    # # Transformar array en numpy
+    # float_array = [round(float(x), 3) for x in time_game.split(", ")]
+    # float_array_points = [round(float(x.replace("'", "")), 3) for x in avg_points.split(", ")]
+    # norm_time = np.asarray(float_array, dtype=np.float32)
+    # norm_points = np.asarray(float_array_points, dtype=np.float32)
+    # norm_win = success_percentage / 100
 
-    # Normalizar los datos
-    # res_time = (norm_time - min_time) / (max_time - min_time)
-    # res_points = (norm_points - min_points) / (max_points - min_points)
-    # res_time = np.where(res_time > 1, 1, res_time)
-    # res_points = np.where(res_points > 1, 1, res_points)
+    # # Normalizar los datos
+    # # res_time = (norm_time - min_time) / (max_time - min_time)
+    # # res_points = (norm_points - min_points) / (max_points - min_points)
+    # # res_time = np.where(res_time > 1, 1, res_time)
+    # # res_points = np.where(res_points > 1, 1, res_points)
 
     mamdani_gravity = infer_system()
     mamdani_wind = infer_system("wind")
     print(mamdani_gravity)
 
-    # Realizar la inferencia utilizando el sistema difuso
-    mamdani_result_gravity: float = mamdani_gravity.infer(
-        time=norm_time.mean(),
-        reward=norm_points.mean(),
-        win=norm_win,
-    )["gravity"]
+    # # Realizar la inferencia utilizando el sistema difuso
+    # mamdani_result_gravity: float = mamdani_gravity.infer(
+    #     time=norm_time.mean(),
+    #     reward=norm_points.mean(),
+    #     win=norm_win,
+    # )["gravity"]
 
-    mamdani_result_wind: float = mamdani_wind.infer(
-        time=norm_time.mean(),
-        reward=norm_points.mean(),
-        win=norm_win,
-    )["wind"]
+    # mamdani_result_wind: float = mamdani_wind.infer(
+    #     time=norm_time.mean(),
+    #     reward=norm_points.mean(),
+    #     win=norm_win,
+    # )["wind"]
 
-    print(f"Gravity: {mamdani_result_gravity:.2f}")
-    print(f"Wind power: {mamdani_result_wind:.2f}")
-    if (mamdani_result_gravity < 50):
-        print("Aumentar el nivel de dificultad.")
-        lunar_difficulty_gravity -= 2
-        if lunar_difficulty_gravity < -11:
-            lunar_difficulty_gravity = -11.5
-    else:
-        print("Disminuir el nivel de dificultad.")
-        lunar_difficulty_gravity += 2
-        if lunar_difficulty_gravity >= 0:
-            lunar_difficulty_gravity = -0.5
+    # print(f"Gravity: {mamdani_result_gravity:.2f}")
+    # print(f"Wind power: {mamdani_result_wind:.2f}")
+    # if (mamdani_result_gravity < 50):
+    #     print("Aumentar el nivel de dificultad.")
+    #     lunar_difficulty_gravity -= 2
+    #     if lunar_difficulty_gravity < -11:
+    #         lunar_difficulty_gravity = -11.5
+    # else:
+    #     print("Disminuir el nivel de dificultad.")
+    #     lunar_difficulty_gravity += 2
+    #     if lunar_difficulty_gravity >= 0:
+    #         lunar_difficulty_gravity = -0.5
+    play_eps = 0
+    while play_eps < 3:
+        # Correr juego nuevo con otra dificultad
+        env = gym.make(
+            "lunar_fuzzy/LunarLanderFuzzy-v0",
+            gravity=round(lunar_difficulty_gravity, 2),
+            enable_wind=False,
+            wind_power=round(lunar_difficulty_wind, 2),
+            render_mode="rgb_array")
 
-    # Correr juego nuevo con otra dificultad
-    env = play(gym.make(
-        "lunar_fuzzy/LunarLanderFuzzy-v0",
-        gravity=round(mamdani_result_gravity, 2),
-        enable_wind=False,
-        wind_power=round(mamdani_result_wind, 2),
-        render_mode="rgb_array"), keys_to_action=keyboard_act, fps=30)
+        env = RenderCollection(env, pop_frames=False, reset_clean=False)
+        env = RecordEpisodeStatistics(env, buffer_length=10)
 
-    env = RenderCollection(env, pop_frames=False, reset_clean=False)
-    env = RecordEpisodeStatistics(env, buffer_length=10)
+        avg_reward, avg_length, std_reward, avg_points, avg_actions, time_game, success_percentage = play(env, keys_to_action=keyboard_act, fps=30)
 
-    # Obtener resultado de ambiente
-    avg_reward, avg_length, std_reward, avg_points, avg_actions, time_game, success_percentage = demo_heuristic_lander(env, seed=level_seed, render=True)
-    print(f"Total Reward: {avg_reward:.2f}")
-    print(f"Standard Deviation of Reward: {std_reward:.2f}")
-    print(f"Total Length: {avg_length:.2f}")
-    print(f"Rewards per episode: {avg_points}")
-    print(f"Actions per episode: {avg_actions}")
-    print(f"Time per episode: {time_game}")
-    print(f"Success Percentage: {success_percentage:.2%}")
+        # Obtener resultado de ambiente
+        # avg_reward, avg_length, std_reward, avg_points, avg_actions, time_game, success_percentage = demo_heuristic_lander(env, seed=level_seed, render=True)
+        print("resultado para jugador")
+        print(f"Total Reward: {avg_reward:.2f}")
+        print(f"Standard Deviation of Reward: {std_reward:.2f}")
+        print(f"Total Length: {avg_length:.2f}")
+        print(f"Rewards per episode: {avg_points}")
+        print(f"Actions per episode: {avg_actions}")
+        print(f"Time per episode: {time_game}")
+        print(f"Success Percentage: {success_percentage:.2%}")
+
+        # Transformar array en numpy
+        float_array = [round(float(x), 3) for x in time_game.split(", ")]
+        float_array_points = [round(float(x.replace("'", "")), 3) for x in avg_points.split(", ")]
+        norm_time = np.asarray(float_array, dtype=np.float32)
+        norm_points = np.asarray(float_array_points, dtype=np.float32)
+        norm_win = success_percentage / 100
+
+        # Realizar la inferencia utilizando el sistema difuso
+        mamdani_result_gravity: float = mamdani_gravity.infer(
+            time=norm_time.mean(),
+            reward=norm_points.mean(),
+            win=norm_win,
+        )["gravity"]
+
+        mamdani_result_wind: float = mamdani_wind.infer(
+            time=norm_time.mean(),
+            reward=norm_points.mean(),
+            win=norm_win,
+        )["wind"]
+
+        print(f"Gravity: {mamdani_result_gravity:.2f}")
+        print(f"Wind power: {mamdani_result_wind:.2f}")
+        # Modificar la dificultad de gravedad
+        print(success_percentage)
+        if (success_percentage > 0.9):
+            print("Aumentar el nivel de dificultad.")
+            lunar_difficulty_gravity -= 2
+        else:
+            if (mamdani_result_gravity > -6):
+                print("Aumentar el nivel de dificultad.")
+                lunar_difficulty_gravity -= 2
+                if lunar_difficulty_gravity < -11:
+                    lunar_difficulty_gravity = -11.5
+            else:
+                print("Disminuir el nivel de dificultad.")
+                lunar_difficulty_gravity += 2
+                if lunar_difficulty_gravity >= 0:
+                    lunar_difficulty_gravity = -0.5
+        # Modificar la dificultad de viento
+        if (success_percentage > 0.9):
+            lunar_difficulty_wind += 3
+        else:
+            if (mamdani_result_wind < 2):
+                # print("Aumentar el nivel de dificultad.")
+                lunar_difficulty_wind += 5
+                if lunar_difficulty_wind < 0:
+                    lunar_difficulty_wind = 0.5
+            else:
+                # print("Disminuir el nivel de dificultad.")
+                mamdani_result_wind -= 5
+                if lunar_difficulty_wind >= 15:
+                    lunar_difficulty_wind = 14.5
